@@ -22,11 +22,11 @@ class Room:
         self.map = [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,1],
-            [1,1,0,1,1,1,1,1,1,0,0,0,0,0,1,1],
-            [1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1],
+            [1,1,0,0,0,0,0,0,0,0,1,1,1,0,1,1],
+            [1,1,0,1,1,1,1,1,1,0,1,0,0,0,1,1],
+            [1,1,0,0,0,1,1,1,1,0,1,0,1,1,1,1],
             [1,1,0,1,1,1,1,1,0,0,0,0,0,0,1,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
             [1,1,0,0,1,1,1,1,0,0,0,0,0,0,1,1],
             [1,1,0,0,0,0,0,0,0,1,1,1,1,0,1,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -35,11 +35,15 @@ class Room:
         ]
 
         self.location = location
+        #self.neighbours = np.empty([4], Room)
+        self.neighbours = []
 
         self.north = None
         self.south = None
         self.east = None
         self.west = None
+
+        self.checkedDoors = np.full((4), True, dtype=bool)
 
         # This holds the background images. If you don't want changing
         # background images, you can delete this part.
@@ -49,12 +53,22 @@ class Room:
     def addNeighbour(self, b, direction):
         if direction == NORTH:
             self.north = b
+            self.checkedDoors[0] = False
+            #self.neighbours[0] = b
         elif direction == SOUTH:
             self.south = b
+            self.checkedDoors[1] = False
+            #self.neighbours[1] = b
         elif direction == EAST:
             self.east = b
+            self.checkedDoors[2] = False
+            #self.neighbours[2] = b
         elif direction == WEST:
             self.west = b
+            self.checkedDoors[3] = False
+            #self.neighbours[3] = b
+        self.neighbours.append(b)
+        
 
 def makeRoom(room):
     

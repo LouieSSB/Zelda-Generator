@@ -20,15 +20,22 @@ WALL = 1
 DOOR = 2
 
 class Player():
-    def __init__(self, x, y, sprite, current_room):
+    def __init__(self, x, y, sprite, starting_room, map):
         self.x = x
         self.y = y
         self.sprite = sprite
-        self.current_room = current_room
+        self.starting_room = starting_room
+        self.current_room = starting_room
         self.last_room = None
+        self.map = map
         self.path = []
+        self.history = []
+        self.stack = []
+        
         self.graph = None
         self.timer = 0
+
+        self.sprite.position = ((x+0.5)*TILE, (y+0.5)*TILE)
         
         
     def choose(self):
@@ -40,14 +47,6 @@ class Player():
 
         return
 
-    def depthFirst(self, graph, start, visited=None):
-        if visited is None:
-            visited = []
-        visited.append(start)
-        #print(start)
-        for next in graph[start] - visited:
-            self.depthFirst(graph, next, visited)
-        return visited
 
 
     def move(self):
@@ -59,8 +58,37 @@ class Player():
             self.timer = 0
         if self.last_room != self.current_room:
             self.last_room = self.current_room
+
             self.graph = astar.makeGraph(self.current_room)
             end = None
+
+            
+            for i in range(4):
+                if self.current_room.checkedDoors[i] == False:
+                    point = self.doorLookup(self.convertDirection(i))
+                    end = self.graph[point]
+            
+            if len(self.stack) > 0:
+                self.stack.append(self.history[-1])
+            if end == None and len(self.current_room.neighbours) > 1:
+                self.stack.pop()
+            if len(self.current_room.neighbours) > 2:
+                self.stack.append(0)
+            
+            if end == None:
+                direction = self.stack.pop()
+                point = self.doorLookup(-direction)
+                end = self.graph[point]
+                if direction == 0:
+                    end = None
+                    print("FAIL")
+
+
+                
+            
+            
+            #end = None
+            """
             doors = []
             for x in range (16):
                 for y in range (11):
@@ -80,6 +108,8 @@ class Player():
                 #end = doors.pop()
                 door = random.randint(0, len(doors)-1)
                 end = doors[door]
+            
+            """
 
             
             self.x = int((self.sprite.center_x - 16)/TILE)
@@ -90,3 +120,27 @@ class Player():
             self.path = astar.aStar(start, end)
 
         return
+
+    def doorLookup(self, i):
+        ### NORTH ###
+        if i == NORTH:
+            return (7, 10)
+        ### SOUTH ###
+        elif i == SOUTH:
+            return(7, 0)
+        ### EAST ###
+        elif i == EAST:
+            return(15, 5)
+        ### WEST ###
+        elif i == WEST:
+            return(0, 5)
+
+    def convertDirection(self, i):
+        if i == 0:
+            return NORTH
+        elif i == 1:
+            return SOUTH
+        elif i == 2:
+            return EAST
+        elif i == 3:
+            return WEST
