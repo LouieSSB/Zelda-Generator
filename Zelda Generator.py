@@ -36,6 +36,7 @@ class MyGame(arcade.Window):
         self.link = None
         self.playerList = None
         self.physics_engine = None
+        self.start = False
         arcade.set_background_color(arcade.color.BLACK)
 
     def setup(self):
@@ -49,10 +50,10 @@ class MyGame(arcade.Window):
         self.timer = 0
 
         
-        self.map = Map.Map(5,5)
+        self.map = Map.Map(4,4)
 
         self.current_room = self.map.rooms[0,0]
-        #self.current_room = self.rooms[0,0]
+        
         self.last_room = self.current_room
         
 
@@ -64,7 +65,7 @@ class MyGame(arcade.Window):
         self.miniSprite.center_y = SCREEN_HEIGHT -(2*TILE) - 5
         self.triforceSprite.center_x = (TILE/2) + 123
         self.triforceSprite.center_y = SCREEN_HEIGHT -(1.5*TILE) - 5
-        #linkSprite.position = (112,112)
+       
         self.playerList.append(linkSprite)
         self.playerList.append(self.miniSprite)
         self.playerList.append(self.triforceSprite)
@@ -74,23 +75,6 @@ class MyGame(arcade.Window):
 
 
         self.physics_engine = arcade.PhysicsEngineSimple(self.link.sprite, self.current_room.wallList)
-
-        #self.graph = makeGraph(room)
-        #self.graph = astar.makeGraph(room)
-
-        #doors = []
-        #end = None
-        #for x in range (15):
-        #    for y in range (11):
-        #        if self.graph[x,y] != None and self.graph[x,y].type == DOOR:
-        #            #doors.append[self.graph]
-        #            end = self.graph[x,y]
-        
-        #self.link.x = int((self.link.sprite.center_x - 16)/TILE)
-        #self.link.y = int((self.link.sprite.center_y - 16)/TILE)
-        #start = self.graph[self.link.x, self.link.y]
-        #self.link.path = astar.aStar(start, end)
-
 
         for i in range(50):
             rupee = arcade.Sprite("rupee_01.png")
@@ -189,8 +173,9 @@ class MyGame(arcade.Window):
             self.link.current_room.checkedDoors[0] = True
 
         self.physics_engine.update()
-
-        self.link.choose()
+        
+        if self.start:
+            self.link.choose()
 
     
 
@@ -219,6 +204,8 @@ class MyGame(arcade.Window):
             self.link.sprite.center_x += TILE
         if key == arcade.key.A:
             self.link.sprite.center_x -= TILE
+        if key == arcade.key.RETURN:
+            self.start = True
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """

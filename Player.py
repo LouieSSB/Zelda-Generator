@@ -51,7 +51,7 @@ class Player():
 
     def move(self):
         self.timer += 1;
-        if len(self.path) > 0 and self.timer >= 1:
+        if len(self.path) > 0 and self.timer >= 5:
             self.sprite.center_x = (self.path[0].x * TILE) + 16
             self.sprite.center_y = (self.path[0].y * TILE) + 16
             self.path.pop(0)
@@ -75,7 +75,7 @@ class Player():
             if len(self.current_room.neighbours) > 2:
                 self.stack.append(0)
             
-            if end == None:
+            if end == None and len(self.stack) > 0:
                 direction = self.stack.pop()
                 point = self.doorLookup(-direction)
                 end = self.graph[point]
