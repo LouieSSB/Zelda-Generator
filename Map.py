@@ -30,50 +30,11 @@ class Map():
         self.visited = np.full([width,height], False, dtype=bool)
         self.tilelist = arcade.SpriteList()
 
-        """
-        room = rooms.Room((0,0))
-        room2 = rooms.Room((1,0))
-        room3 = rooms.Room((2,0))
-        room4 = rooms.Room((0,1))
-        room5 = rooms.Room((1,1))
-        room6 = rooms.Room((2,1))
-        room7 = rooms.Room((1,2))
-        room8 = rooms.Room((0,2))
-        room9 = rooms.Room((2,2))
-        #pairRooms(room, room2, EAST)
-        rooms.pairRooms(room2, room3, EAST)
-        rooms.pairRooms(room, room4, NORTH)
-        rooms.pairRooms(room2, room5, NORTH)
-        rooms.pairRooms(room4, room5, EAST)
-        rooms.pairRooms(room3, room6, NORTH)
-        rooms.pairRooms(room5, room7, NORTH)
-        rooms.pairRooms(room7, room8, WEST)
-        rooms.pairRooms(room6, room9, NORTH)
-
-
-        room = rooms.makeRoom(room)
-        room2 = rooms.makeRoom(room2)
-        room3 = rooms.makeRoom(room3)
-        room4 = rooms.makeRoom(room4)
-        room5 = rooms.makeRoom(room5)
-        room6 = rooms.makeRoom(room6)
-        room7 = rooms.makeRoom(room7)
-        room8 = rooms.makeRoom(room8)
-        room9 = rooms.makeRoom(room9)
-
-        self.rooms[room.location[0], room.location[1]] = room
-        self.rooms[room2.location[0], room2.location[1]] = room2
-        self.rooms[room3.location[0], room3.location[1]] = room3
-        self.rooms[room4.location[0], room4.location[1]] = room4
-        self.rooms[room5.location[0], room5.location[1]] = room5
-        self.rooms[room6.location[0], room6.location[1]] = room6
-        self.rooms[room7.location[0], room7.location[1]] = room7
-        self.rooms[room8.location[0], room8.location[1]] = room8
-        self.rooms[room9.location[0], room9.location[1]] = room9
-        """
         self.generateMaze()
         for i in range (width):
             for j in range(height):
+                temp = random.randint(0, 13)
+                self.rooms[i,j].setTemplate(temp)
                 rooms.makeRoom(self.rooms[i,j])
         
 
@@ -88,14 +49,10 @@ class Map():
         y = random.randrange(0,self.height)
         stack = []
 
-        #room = rooms.Room((0,0))
-        #room = rooms.Room((x,y))
-        #self.rooms[x,y] = room
         room = self.rooms[x,y]
         stack.append(room)
         self.visited[room.location] = True
-        visitCount = 0
-        totalrooms = self.width*self.height
+        
         while len(stack) > 0:
 
             neighbours = self.getAvNeighbours(room.location[0], room.location[1])
@@ -122,18 +79,12 @@ class Map():
                 rooms.pairRooms(room, next, EAST)
             elif diff == (-1,0):
                 rooms.pairRooms(room, next, WEST)
-            #else:
-                #print("FUCK")
-                #pass
                 
             room = next
             if self.visited[room.location] == False or 1 == 1:
                 stack.append(room)
                 self.visited[room.location] = True
-                visitCount = visitCount + 1
-            
-
-
+                
 
 
         return

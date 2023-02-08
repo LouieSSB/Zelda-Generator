@@ -76,6 +76,8 @@ class MyGame(arcade.Window):
 
         self.physics_engine = arcade.PhysicsEngineSimple(self.link.sprite, self.current_room.wallList)
 
+
+        """
         for i in range(50):
             rupee = arcade.Sprite("rupee_01.png")
             rupee.center_x = random.randrange(TILE*3, SCREEN_WIDTH-TILE*3)
@@ -83,6 +85,7 @@ class MyGame(arcade.Window):
             self.rupeeList.append(rupee)
         
         pass
+        """
 
 ### ON DRAW ###
     def on_draw(self):
@@ -92,10 +95,12 @@ class MyGame(arcade.Window):
         self.map.tilelist.draw()
         self.link.current_room.floor.draw()
         self.link.current_room.doors.draw()
-
         self.playerList.draw()
-        self.rupeeList.draw()
         self.link.current_room.wallList.draw()
+        self.link.current_room.rupees.draw()
+
+        
+        
         
         DEFAULT_FONT_SIZE = 10
         start_x = 420
@@ -118,7 +123,7 @@ class MyGame(arcade.Window):
 ### UPDATE ###
     def update(self, delta_time):
         """ All the logic to move, and the game logic goes here. """
-        rupeeHitList = arcade.check_for_collision_with_list(self.link.sprite, self.rupeeList)
+        rupeeHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.rupees)
         for rupee in rupeeHitList:
             rupee.kill()
             self.money += 1
@@ -205,7 +210,7 @@ class MyGame(arcade.Window):
         if key == arcade.key.A:
             self.link.sprite.center_x -= TILE
         if key == arcade.key.RETURN:
-            self.start = True
+            self.start = not self.start
 
     def on_key_release(self, key, modifiers):
         """Called when the user releases a key. """
