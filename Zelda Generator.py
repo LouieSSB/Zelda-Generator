@@ -43,7 +43,6 @@ class MyGame(arcade.Window):
         # Set up your game here
         
         self.playerList = arcade.SpriteList()
-        self.rupeeList = arcade.SpriteList()
         self.wallList = arcade.SpriteList()
         self.mapList = arcade.SpriteList()
         self.money = 0
@@ -77,21 +76,12 @@ class MyGame(arcade.Window):
         self.physics_engine = arcade.PhysicsEngineSimple(self.link.sprite, self.current_room.wallList)
 
 
-        """
-        for i in range(50):
-            rupee = arcade.Sprite("rupee_01.png")
-            rupee.center_x = random.randrange(TILE*3, SCREEN_WIDTH-TILE*3)
-            rupee.center_y = random.randrange(TILE*4, SCREEN_HEIGHT - TILE*6)
-            self.rupeeList.append(rupee)
-        
-        pass
-        """
 
 ### ON DRAW ###
     def on_draw(self):
         """ Render the screen. """
         arcade.start_render()
-        # Your drawing code goes here
+        ### DRAW SPRITES ###
         self.map.tilelist.draw()
         self.link.current_room.floor.draw()
         self.link.current_room.doors.draw()
@@ -99,9 +89,7 @@ class MyGame(arcade.Window):
         self.link.current_room.wallList.draw()
         self.link.current_room.rupees.draw()
 
-        
-        
-        
+        ### DRAW TEXT ###
         DEFAULT_FONT_SIZE = 10
         start_x = 420
         start_y = 450
@@ -181,10 +169,6 @@ class MyGame(arcade.Window):
         
         if self.start:
             self.link.choose()
-
-    
-
-    
 
 
         pass

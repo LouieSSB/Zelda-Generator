@@ -18,6 +18,10 @@ WEST = -2
 FLOOR = 0
 WALL = 1
 DOOR = 2
+TRAVERSING = 0
+COLLECTING = 1
+FIGHTING  = 2
+SPEED = 1
 
 class Player():
     def __init__(self, x, y, sprite, starting_room, map):
@@ -31,9 +35,15 @@ class Player():
         self.path = []
         self.history = []
         self.stack = []
+        self.rupeeTargets = arcade.SpriteList()
+        self.lastRupee = None
+
+        self.state = COLLECTING
+        
         
         self.graph = None
         self.timer = 0
+        self.rupeeAffinity = 1.0
 
         self.sprite.position = ((x+0.5)*TILE, (y+0.5)*TILE)
         
@@ -41,23 +51,27 @@ class Player():
     def choose(self):
 
         self.move()
+        self.gotoRupees()
+        self.traverse()
 
         
 
 
         return
 
-
-
-    def move(self):
-        self.timer += 1;
-        if len(self.path) > 0 and self.timer >= 5:
+    def move (self):
+        self.timer += 1
+        if len(self.path) > 0 and self.timer >= SPEED:
             self.sprite.center_x = (self.path[0].x * TILE) + 16
             self.sprite.center_y = (self.path[0].y * TILE) + 16
             self.path.pop(0)
             self.timer = 0
-        if self.last_room != self.current_room:
-            self.last_room = self.current_room
+
+
+
+    def traverse(self):
+        if self.state == TRAVERSING:#self.last_room != self.current_room:
+            #self.last_room = self.current_room
 
             self.graph = astar.makeGraph(self.current_room)
             end = None
@@ -82,35 +96,6 @@ class Player():
                 if direction == 0:
                     end = None
                     print("FAIL")
-
-
-                
-            
-            
-            #end = None
-            """
-            doors = []
-            for x in range (16):
-                for y in range (11):
-                    if self.graph[x,y] != None and self.graph[x,y].type == DOOR:
-                        if self.sprite.bottom <= TILE and y != 0: #If at bottom of screen, add everything except bottom door
-                            doors.append(self.graph[x,y])
-                        elif self.sprite.top >= SCREEN_HEIGHT - TILE*5 and y != 10: #If at top of screen, add everything except top door
-                            doors.append(self.graph[x,y])
-                        elif self.sprite.left <= TILE and x != 0: #If at left of screen, add everything except left door
-                            doors.append(self.graph[x,y])
-                        elif (self.sprite.right >= (SCREEN_WIDTH - TILE*2)) and x != 15: #If at right of screen, add everything except right door
-                            doors.append(self.graph[x,y])
-
-                        
-                        #end = self.graph[x,y]
-            if len(doors) > 0:
-                #end = doors.pop()
-                door = random.randint(0, len(doors)-1)
-                end = doors[door]
-            
-            """
-
             
             self.x = int((self.sprite.center_x - 16)/TILE)
             self.y = int((self.sprite.center_y - 16)/TILE)
@@ -120,6 +105,59 @@ class Player():
             self.path = astar.aStar(start, end)
 
         return
+    def findRupees(self):
+        for rupee in self.current_room.rupees:
+            num = random.random()
+            if num <= self.rupeeAffinity:
+                self.rupeeTargets.append(rupee)  
+        return
+    def gotoRupees(self):
+        
+        if self.last_room != self.current_room:
+            self.last_room = self.current_room
+            self.state = COLLECTING
+            self.graph = astar.makeGraph(self.current_room)
+            self.findRupees()
+            rupee = self.selectRupee()
+        
+        if len(self.rupeeTargets) > 0:
+            self.previousRupeeCount = len(self.rupeeTargets)
+            rupee = self.selectRupee()
+            if rupee != self.lastRupee:
+                self.lastRupee = rupee
+                rupee = self.selectRupee()
+
+                self.graph = astar.makeGraph(self.current_room)
+                self.x = int((self.sprite.center_x - 16)/TILE)
+                self.y = int((self.sprite.center_y - 16)/TILE)
+                start = self.graph[self.x, self.y]
+                endX = int((rupee.center_x - 16) / TILE)
+                endY = int((rupee.center_y - 16) / TILE)
+                end = self.graph[endX, endY]
+                self.path = astar.aStar(start, end)
+        else:
+            self.state = TRAVERSING
+
+
+
+        return
+    
+    def selectRupee(self):
+        lowest = 100000
+        best = None
+        for rupee in self.rupeeTargets:
+            dist = self.manhattan(self.sprite.position, rupee.position) + (random.randint(0, 1))/2
+            if dist < lowest:
+                lowest = dist
+                best = rupee
+        return best
+
+
+
+    def manhattan(self, a, b):
+        return sum(abs(val1-val2) for val1, val2 in zip(a,b))
+
+
 
     def doorLookup(self, i):
         ### NORTH ###

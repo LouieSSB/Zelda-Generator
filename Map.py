@@ -18,6 +18,7 @@ WEST = -2
 FLOOR = 0
 WALL = 1
 DOOR = 2
+RUPEE_DENSITY = 1.0
 
 class Map():
     def __init__(self, height, width):
@@ -35,7 +36,7 @@ class Map():
             for j in range(height):
                 temp = random.randint(0, 13)
                 self.rooms[i,j].setTemplate(temp)
-                rooms.makeRoom(self.rooms[i,j])
+                rooms.makeRoom(self.rooms[i,j], RUPEE_DENSITY)
         
 
 

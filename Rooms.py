@@ -62,7 +62,7 @@ class Room:
         self.map = copy.deepcopy(TEMPLATES[i])
         
 
-def makeRoom(room):
+def makeRoom(room, rupee_density):
     
     room.wallList = arcade.SpriteList()
     room.floor = arcade.SpriteList()
@@ -110,10 +110,12 @@ def makeRoom(room):
     for x in range (MAP_WIDTH):
         for y in range(MAP_HEIGHT):
             if room.map[y][x] == 0:
-                rupee = arcade.Sprite("rupee_01.png")
-                rupee.left = x*TILE + TILE/4
-                rupee.bottom = SCREEN_HEIGHT -(5*TILE) - y*TILE
-                room.rupees.append(rupee)
+                temp = random.random()
+                if temp <= rupee_density:
+                    rupee = arcade.Sprite("rupee_01.png")
+                    rupee.left = x*TILE + TILE/4
+                    rupee.bottom = SCREEN_HEIGHT -(5*TILE) - y*TILE
+                    room.rupees.append(rupee)
     
 
 
