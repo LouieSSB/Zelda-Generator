@@ -18,13 +18,14 @@ WEST = -2
 FLOOR = 0
 WALL = 1
 DOOR = 2
-RUPEE_DENSITY = 1.0
+RUPEE_DENSITY = 0.0
 
 class Map():
-    def __init__(self, height, width):
+    def __init__(self, width, height):
         self.height = height
         self.width = width
         self.rooms = np.empty([width, height], rooms.Room)
+        self.goal = None
         for x in range(width):
             for y in range(height):
                 self.rooms[x,y] = rooms.Room((x,y))
@@ -32,14 +33,23 @@ class Map():
         self.tilelist = arcade.SpriteList()
 
         self.generateMaze()
+        highest = 0
         for i in range (width):
             for j in range(height):
-                temp = random.randint(0, 13)
-                self.rooms[i,j].setTemplate(temp)
-                rooms.makeRoom(self.rooms[i,j], RUPEE_DENSITY)
-        
-
-
+                if self.rooms[i,j].distance >= highest:
+                    self.goal = self.rooms[i,j]
+                    highest = self.rooms[i,j].distance
+        for i in range (width):
+            for j in range(height):
+                if self.rooms[i,j] == self.goal:
+                    self.goal.setTemplate(13)
+                    rooms.makeRoom(self.rooms[i,j], 0)
+                else:
+                    temp = random.randint(0, 12)
+                    self.rooms[i,j].setTemplate(temp)
+                    rooms.makeRoom(self.rooms[i,j], RUPEE_DENSITY)
+                
+                
         self.makeMinimap()
 
     
@@ -49,8 +59,11 @@ class Map():
         x = random.randrange(0, self.width)
         y = random.randrange(0,self.height)
         stack = []
+        x = 0
+        y = 0
 
         room = self.rooms[x,y]
+        room.distance = 0
         stack.append(room)
         self.visited[room.location] = True
         
@@ -67,8 +80,6 @@ class Map():
             if len(neighbours) > 0:
                 stack.append(room)
                 next = neighbours[random.randrange(0, len(neighbours))]
-            else:
-                next = room
             
 
             diff = tuple(map(lambda i, j: i - j, next.location, room.location))
@@ -81,13 +92,17 @@ class Map():
             elif diff == (-1,0):
                 rooms.pairRooms(room, next, WEST)
                 
+            next.distance = room.distance + 1
             room = next
+            
+            self.goal = room
+            
             if self.visited[room.location] == False or 1 == 1:
                 stack.append(room)
                 self.visited[room.location] = True
                 
 
-
+        
         return
     def makeMinimap(self):
         for i in range (self.width):

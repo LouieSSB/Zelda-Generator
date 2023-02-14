@@ -49,7 +49,7 @@ class MyGame(arcade.Window):
         self.timer = 0
 
         
-        self.map = Map.Map(4,4)
+        self.map = Map.Map(6,6)
 
         self.current_room = self.map.rooms[0,0]
         
@@ -62,8 +62,8 @@ class MyGame(arcade.Window):
         self.triforceSprite = arcade.Sprite("triforce_02.png")
         self.miniSprite.center_x = (TILE/2) + 91 
         self.miniSprite.center_y = SCREEN_HEIGHT -(2*TILE) - 5
-        self.triforceSprite.center_x = (TILE/2) + 123
-        self.triforceSprite.center_y = SCREEN_HEIGHT -(1.5*TILE) - 5
+        self.triforceSprite.center_x = (TILE/2) * (self.map.goal.location[0]) + 107
+        self.triforceSprite.center_y = 408 + (TILE/4) * (self.map.goal.location[1]) + 3
        
         self.playerList.append(linkSprite)
         self.playerList.append(self.miniSprite)
@@ -88,6 +88,7 @@ class MyGame(arcade.Window):
         self.playerList.draw()
         self.link.current_room.wallList.draw()
         self.link.current_room.rupees.draw()
+        self.link.current_room.triforce.draw()
 
         ### DRAW TEXT ###
         DEFAULT_FONT_SIZE = 10
@@ -115,6 +116,7 @@ class MyGame(arcade.Window):
         for rupee in rupeeHitList:
             rupee.kill()
             self.money += 1
+            self.link.money += 1
         
         ### EAST ###
         if self.link.sprite.center_x > (SCREEN_WIDTH - TILE):
@@ -164,6 +166,12 @@ class MyGame(arcade.Window):
             self.miniSprite.center_y -= 8
             self.link.history.append(SOUTH)
             self.link.current_room.checkedDoors[0] = True
+        
+        if len(self.link.history) >= 2:
+            if self.link.history[-2] == 0:
+                self.link.history.pop()
+                self.link.history.pop()
+
 
         self.physics_engine.update()
         

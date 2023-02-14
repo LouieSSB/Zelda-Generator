@@ -21,7 +21,9 @@ class Room:
         self.floor = None
         self.doors = None
         self.rupees = None
+        self.triforcc = None
         self.enemies = None
+        self.distance = 0
 
         self.location = location
         self.neighbours = []
@@ -68,6 +70,8 @@ def makeRoom(room, rupee_density):
     room.floor = arcade.SpriteList()
     room.doors = arcade.SpriteList()
     room.rupees = arcade.SpriteList()
+    room.triforce = arcade.SpriteList()
+    makeTriforce(room)
 
     ### Cut out the walls ###
     if room.north != None:
@@ -117,11 +121,21 @@ def makeRoom(room, rupee_density):
                     rupee.bottom = SCREEN_HEIGHT -(5*TILE) - y*TILE
                     room.rupees.append(rupee)
     
+    
+
+
+    
 
 
 
     return room
-
+def makeTriforce(room):
+    ### ADD TRIFORCE ###
+    if room.map == TEMPLATES[TRIFORCE]:
+        triforce = arcade.Sprite("triforce_01.png")
+        triforce.left = 7*TILE + 22
+        triforce.bottom = SCREEN_HEIGHT -(5*TILE) - 4*TILE
+        room.triforce.append(triforce)
 def pairRooms(a, b, direction):
     a.addNeighbour(b, direction)
     b.addNeighbour(a, -direction)

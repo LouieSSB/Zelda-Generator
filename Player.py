@@ -36,9 +36,13 @@ class Player():
         self.history = []
         self.stack = []
         self.rupeeTargets = arcade.SpriteList()
-        self.lastRupee = None
+        self.rupee = None
+
+        self.money = 0
+        self.lastmoney = 0
 
         self.state = COLLECTING
+        self.last_state = None
         
         
         self.graph = None
@@ -67,42 +71,34 @@ class Player():
             self.path.pop(0)
             self.timer = 0
 
-
-
     def traverse(self):
-        if self.state == TRAVERSING:#self.last_room != self.current_room:
-            #self.last_room = self.current_room
-
+        if self.state == TRAVERSING and self.last_state == COLLECTING:
+            self.last_state = TRAVERSING
             self.graph = astar.makeGraph(self.current_room)
             end = None
-
-            
             for i in range(4):
                 if self.current_room.checkedDoors[i] == False:
                     point = self.doorLookup(self.convertDirection(i))
                     end = self.graph[point]
-            
-            if len(self.stack) > 0:
-                self.stack.append(self.history[-1])
-            if end == None and len(self.current_room.neighbours) > 1:
-                self.stack.pop()
-            if len(self.current_room.neighbours) > 2:
-                self.stack.append(0)
-            
-            if end == None and len(self.stack) > 0:
-                direction = self.stack.pop()
+
+            ### BACKTRACKING ###
+            if end == None: 
+                if len(self.history) == 0:
+                    print("ERROR: Triforce not found.")
+                    exit()
+                direction = self.history.pop()
+                self.history.append(0) #Signifies that backtracking has happened
                 point = self.doorLookup(-direction)
                 end = self.graph[point]
-                if direction == 0:
-                    end = None
-                    print("FAIL")
-            
+        
+
             self.x = int((self.sprite.center_x - 16)/TILE)
             self.y = int((self.sprite.center_y - 16)/TILE)
             start = self.graph[self.x, self.y]
             if end == None:
                 end = start
             self.path = astar.aStar(start, end)
+        
 
         return
     def findRupees(self):
@@ -118,27 +114,26 @@ class Player():
             self.state = COLLECTING
             self.graph = astar.makeGraph(self.current_room)
             self.findRupees()
-            rupee = self.selectRupee()
-        
+            self.rupee = self.selectRupee()
+        if self.state != COLLECTING:
+            return
         if len(self.rupeeTargets) > 0:
-            self.previousRupeeCount = len(self.rupeeTargets)
-            rupee = self.selectRupee()
-            if rupee != self.lastRupee:
-                self.lastRupee = rupee
-                rupee = self.selectRupee()
+            if self.money != self.lastmoney:
+                self.lastmoney = self.money
+                self.rupee = self.selectRupee()
 
-                self.graph = astar.makeGraph(self.current_room)
-                self.x = int((self.sprite.center_x - 16)/TILE)
-                self.y = int((self.sprite.center_y - 16)/TILE)
-                start = self.graph[self.x, self.y]
-                endX = int((rupee.center_x - 16) / TILE)
-                endY = int((rupee.center_y - 16) / TILE)
-                end = self.graph[endX, endY]
-                self.path = astar.aStar(start, end)
+            self.graph = astar.makeGraph(self.current_room)
+            self.x = int((self.sprite.center_x - 16)/TILE)
+            self.y = int((self.sprite.center_y - 16)/TILE)
+            start = self.graph[self.x, self.y]
+            endX = int((self.rupee.center_x - 16) / TILE)
+            endY = int((self.rupee.center_y - 16) / TILE)
+            end = self.graph[endX, endY]
+            self.path = astar.aStar(start, end)
+
         else:
             self.state = TRAVERSING
-
-
+            self.last_state = COLLECTING
 
         return
     
@@ -146,8 +141,8 @@ class Player():
         lowest = 100000
         best = None
         for rupee in self.rupeeTargets:
-            dist = self.manhattan(self.sprite.position, rupee.position) + (random.randint(0, 1))/2
-            if dist < lowest:
+            dist = self.manhattan(self.sprite.position, rupee.position) + (random.randint(0, 2))/2
+            if dist <= lowest:
                 lowest = dist
                 best = rupee
         return best
