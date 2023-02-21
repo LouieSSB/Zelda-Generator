@@ -3,6 +3,7 @@ import random
 import arcade
 import numpy as np
 import copy
+import enemy as enemy
 
 SCREEN_WIDTH = 512
 SCREEN_HEIGHT = 480
@@ -13,6 +14,8 @@ NORTH = 1
 SOUTH = -1
 EAST = 2
 WEST = -2
+STALFOS = 0
+DARKNUT = 1
 
 class Room:
     def __init__(self, location):
@@ -21,8 +24,9 @@ class Room:
         self.floor = None
         self.doors = None
         self.rupees = None
-        self.triforcc = None
-        self.enemies = None
+        self.triforce = None
+        self.enemies = []
+        self.enemySprites = None
         self.distance = 0
 
         self.location = location
@@ -64,13 +68,14 @@ class Room:
         self.map = copy.deepcopy(TEMPLATES[i])
         
 
-def makeRoom(room, rupee_density):
+def makeRoom(room, rupee_density, enemy_density):
     
     room.wallList = arcade.SpriteList()
     room.floor = arcade.SpriteList()
     room.doors = arcade.SpriteList()
     room.rupees = arcade.SpriteList()
     room.triforce = arcade.SpriteList()
+    room.enemySprites = arcade.SpriteList()
     makeTriforce(room)
 
     ### Cut out the walls ###
@@ -121,8 +126,16 @@ def makeRoom(room, rupee_density):
                     rupee.bottom = SCREEN_HEIGHT -(5*TILE) - y*TILE
                     room.rupees.append(rupee)
     
-    
-
+    a = False
+    for x in range (MAP_WIDTH):
+        for y in range(MAP_HEIGHT):
+            if room.map[y][x] == 0:
+                num = random.random()
+                if enemy_density >= num:
+                    foe = enemy.Enemy(x,y, STALFOS, room)
+                    room.enemies.append(foe)
+                    room.enemySprites.append(foe.sprite)
+        
 
     
 

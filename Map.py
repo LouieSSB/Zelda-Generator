@@ -18,70 +18,78 @@ WEST = -2
 FLOOR = 0
 WALL = 1
 DOOR = 2
-RUPEE_DENSITY = 0.0
+RUPEE_DENSITY = 0.5
+ENEMY_DENSITY = 0.1
 
 class Map():
     def __init__(self, width, height):
         self.height = height
         self.width = width
         self.rooms = np.empty([width, height], rooms.Room)
-        self.goal = None
+        self.goal = None # Triforce room
+        ### Create map array ###
         for x in range(width):
             for y in range(height):
                 self.rooms[x,y] = rooms.Room((x,y))
+                
+        ### Map of which rooms have been visited for maze generation ###
         self.visited = np.full([width,height], False, dtype=bool)
-        self.tilelist = arcade.SpriteList()
+        self.tilelist = arcade.SpriteList() # Sprite list for minimap
 
+        ### Depth-first maze generation ###
         self.generateMaze()
+        ### Locate room furthest from start ###
         highest = 0
         for i in range (width):
             for j in range(height):
                 if self.rooms[i,j].distance >= highest:
                     self.goal = self.rooms[i,j]
                     highest = self.rooms[i,j].distance
+        ### Sets templates for each room, and builds their tiles ###
         for i in range (width):
             for j in range(height):
-                if self.rooms[i,j] == self.goal:
+                if self.rooms[i,j] == self.goal: #Triforce room gets its own layout
                     self.goal.setTemplate(13)
-                    rooms.makeRoom(self.rooms[i,j], 0)
+                    rooms.makeRoom(self.rooms[i,j], 0, 0) #Room has no enemies or money
                 else:
-                    temp = random.randint(0, 12)
+                    temp = random.randint(0, 12) #All other rooms are chosen randomly
                     self.rooms[i,j].setTemplate(temp)
-                    rooms.makeRoom(self.rooms[i,j], RUPEE_DENSITY)
+                    rooms.makeRoom(self.rooms[i,j], RUPEE_DENSITY, ENEMY_DENSITY)
                 
-                
+        ### Make minimap based on map size ###   
         self.makeMinimap()
 
     
 
-
+    ### MAZE GENERATOR ###
     def generateMaze(self):
-        x = random.randrange(0, self.width)
-        y = random.randrange(0,self.height)
-        stack = []
+        stack = [] #Stack for depth-first generation
+        ### Starting co-ordinates ###
         x = 0
         y = 0
 
+        ### Starting room, mark as visited ###
         room = self.rooms[x,y]
         room.distance = 0
         stack.append(room)
         self.visited[room.location] = True
         
+        ### When stack is empty, every room has been visited ###
         while len(stack) > 0:
-
             neighbours = self.getAvNeighbours(room.location[0], room.location[1])
+            ### Revisit each room in stack to look for unexplored neighbours ###
             while len(neighbours) == 0 and len(stack) > 0:
                 room = stack.pop()
                 neighbours = self.getAvNeighbours(room.location[0], room.location[1])
             if len(neighbours) == 0:
                 break
 
-
+            ### Choose a random neighbour to room to explore next ###
             if len(neighbours) > 0:
                 stack.append(room)
                 next = neighbours[random.randrange(0, len(neighbours))]
             
-
+            ### Figures out the orientation of the 2 rooms from each other ###
             diff = tuple(map(lambda i, j: i - j, next.location, room.location))
             if diff == (0,1):
                 rooms.pairRooms(room, next, NORTH)
@@ -92,30 +100,28 @@ class Map():
             elif diff == (-1,0):
                 rooms.pairRooms(room, next, WEST)
                 
+            ### Each room is further from than the start than its parent ###
             next.distance = room.distance + 1
             room = next
             
-            self.goal = room
-            
-            if self.visited[room.location] == False or 1 == 1:
-                stack.append(room)
-                self.visited[room.location] = True
+            ### Room put on stack so that its neighbours can be checked again later ###
+            stack.append(room)
+            self.visited[room.location] = True
                 
-
-        
-        return
+    ### MINIMAP GENERATION ###
     def makeMinimap(self):
         for i in range (self.width):
             for (j) in range(self.height):
                 if self.rooms[i,j] != None:
-                    maptile = arcade.Sprite("room_01.png")
+                    maptile = arcade.Sprite("room_01.png") # Blue rectangle graphic
                     maptile.left = i*(TILE/2) + 100
                     maptile.bottom = 13*TILE + (8*j) - 8
                     self.tilelist.append(maptile)
 
-
+    ### GET NEIGHBOURS FOR GENERATION ###
     def getNeighbours(self, x, y):
         neighbours = []
+        ### Checks neighbours in each direction, add to list ###
         if (x - 1) >= 0:
             neighbours.append(self.rooms[x-1, y])
         if (x + 1) <= self.width - 1:
@@ -124,17 +130,16 @@ class Map():
             neighbours.append(self.rooms[x, y-1])
         if (y + 1) <= self.height - 1:
             neighbours.append(self.rooms[x, y+1])
-    
-
         return neighbours
     
+    ### GET UNVISITED NEIGHBOURS ###
     def getAvNeighbours(self,x,y):
         neighbours = self.getNeighbours(x,y)
         options = []
+        ### Takes list of neighbours, checks if each has been visited ###
         for neighbour in neighbours:
             if self.visited[neighbour.location] == False:
-                options.append(neighbour)
-        
+                options.append(neighbour) 
         return options
 
     

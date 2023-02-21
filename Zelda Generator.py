@@ -45,11 +45,9 @@ class MyGame(arcade.Window):
         self.playerList = arcade.SpriteList()
         self.wallList = arcade.SpriteList()
         self.mapList = arcade.SpriteList()
-        self.money = 0
-        self.timer = 0
 
         
-        self.map = Map.Map(6,6)
+        self.map = Map.Map(5,5)
 
         self.current_room = self.map.rooms[0,0]
         
@@ -89,14 +87,29 @@ class MyGame(arcade.Window):
         self.link.current_room.wallList.draw()
         self.link.current_room.rupees.draw()
         self.link.current_room.triforce.draw()
+        self.link.current_room.enemySprites.draw()
 
         ### DRAW TEXT ###
         DEFAULT_FONT_SIZE = 10
         start_x = 420
         start_y = 450
-        arcade.draw_text("Rupees: " + str(self.money),
+        arcade.draw_text("Rupees: " + str(self.link.money),
                          start_x,
                          start_y,
+                         arcade.color.WHITE,
+                         DEFAULT_FONT_SIZE,
+                         width=150,
+                         )
+        arcade.draw_text("Damage: " + str(self.link.damage),
+                         start_x,
+                         start_y - 20,
+                         arcade.color.WHITE,
+                         DEFAULT_FONT_SIZE,
+                         width=150,
+                         )
+        arcade.draw_text("Kills: " + str(self.link.kills),
+                         start_x,
+                         start_y - 40,
                          arcade.color.WHITE,
                          DEFAULT_FONT_SIZE,
                          width=150,
@@ -113,10 +126,25 @@ class MyGame(arcade.Window):
     def update(self, delta_time):
         """ All the logic to move, and the game logic goes here. """
         rupeeHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.rupees)
+        triforceHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.triforce)
+        enemyHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.enemySprites)
         for rupee in rupeeHitList:
             rupee.kill()
-            self.money += 1
             self.link.money += 1
+        
+        for enemy in enemyHitList:
+            enemy.kill()
+            print(len(self.link.enemyTargets))
+            self.link.kills += 1
+            num = random.random()
+            if self.link.combatAbility <= num:
+                self.link.damage += 1
+
+        
+        for triforce in triforceHitList:
+            triforce.kill()
+            print("GAME DONE!")
+            exit()
         
         ### EAST ###
         if self.link.sprite.center_x > (SCREEN_WIDTH - TILE):
@@ -177,6 +205,8 @@ class MyGame(arcade.Window):
         
         if self.start:
             self.link.choose()
+        for foe in self.link.current_room.enemies:
+            foe.move()
 
 
         pass

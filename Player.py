@@ -21,6 +21,7 @@ DOOR = 2
 TRAVERSING = 0
 COLLECTING = 1
 FIGHTING  = 2
+FINISHING = 3
 SPEED = 1
 
 class Player():
@@ -34,10 +35,14 @@ class Player():
         self.map = map
         self.path = []
         self.history = []
-        self.stack = []
         self.rupeeTargets = arcade.SpriteList()
+        self.enemyTargets = arcade.SpriteList()
         self.rupee = None
+        self.foe = None
 
+        self.damage = 0
+        self.kills = 0
+        self.lastKills = 0
         self.money = 0
         self.lastmoney = 0
 
@@ -47,19 +52,21 @@ class Player():
         
         self.graph = None
         self.timer = 0
-        self.rupeeAffinity = 1.0
+        self.rupeeAffinity = 0.1
+        self.combatAffinity = 1.0
+        self.combatAbility = 0.9
 
         self.sprite.position = ((x+0.5)*TILE, (y+0.5)*TILE)
         
         
     def choose(self):
 
-        self.move()
+        self.finish()
+        self.move()  
         self.gotoRupees()
+        self.killEnemies()
         self.traverse()
-
-        
-
+        print(len(self.enemyTargets))
 
         return
 
@@ -72,7 +79,7 @@ class Player():
             self.timer = 0
 
     def traverse(self):
-        if self.state == TRAVERSING and self.last_state == COLLECTING:
+        if self.state == TRAVERSING and self.last_state == FIGHTING:
             self.last_state = TRAVERSING
             self.graph = astar.makeGraph(self.current_room)
             end = None
@@ -132,7 +139,7 @@ class Player():
             self.path = astar.aStar(start, end)
 
         else:
-            self.state = TRAVERSING
+            self.state = FIGHTING
             self.last_state = COLLECTING
 
         return
@@ -147,6 +154,67 @@ class Player():
                 best = rupee
         return best
 
+    def finish(self):
+        if len(self.current_room.triforce) > 0 and self.state != FINISHING:
+            self.state = FINISHING
+            self.graph = astar.makeGraph(self.current_room)
+            self.x = int((self.sprite.center_x - 16)/TILE)
+            self.y = int((self.sprite.center_y - 16)/TILE)
+            start = self.graph[self.x, self.y]
+            endX = 7
+            endY = 6
+            end = self.graph[endX, endY]
+            self.path = astar.aStar(start, end)
+
+    def killEnemies(self):
+        if self.state == FIGHTING and self.last_state == COLLECTING:
+            self.last_state = FIGHTING
+            self.graph = astar.makeGraph(self.current_room)
+            self.findEnemies()
+            self.foe = self.selectEnemy()
+        if self.state != FIGHTING:
+            return
+        if len(self.enemyTargets) > 0:
+            if self.kills != self.lastKills:
+                self.lastKills = self.kills
+                self.foe = self.selectEnemy()
+
+            
+            self.graph = astar.makeGraph(self.current_room)
+            self.x = int((self.sprite.center_x - 16)/TILE)
+            self.y = int((self.sprite.center_y - 16)/TILE)
+            start = self.graph[self.x, self.y]
+            endX = int((self.foe.center_x - 14) / TILE)
+            endY = int((self.foe.center_y - 16) / TILE)
+            end = self.graph[endX, endY]
+            if end == None:
+                print("?")
+                return
+            self.path = astar.aStar(start, end)
+
+        else:
+            self.state = TRAVERSING
+            self.last_state = FIGHTING
+
+        return
+
+    def findEnemies(self):
+        for foe in self.current_room.enemySprites:
+            num = random.random()
+            if num <= self.combatAffinity:
+                self.enemyTargets.append(foe)
+                print("ADD")
+        return
+    
+    def selectEnemy(self):
+        lowest = 100000
+        best = None
+        for foe in self.enemyTargets:
+            dist = self.manhattan(self.sprite.position, foe.position) + (random.randint(0, 2))/2
+            if dist <= lowest:
+                lowest = dist
+                best = foe
+        return best
 
 
     def manhattan(self, a, b):
