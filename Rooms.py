@@ -29,13 +29,19 @@ class Room:
         self.enemySprites = None
         self.distance = 0
 
+        self.quadrant = 0
+
         self.location = location
+        self.x = location[0]
+        self.y = location[1]
         self.neighbours = []
 
         self.north = None
         self.south = None
         self.east = None
         self.west = None
+
+        self.final = False
 
 
         self.checkedDoors = np.full((4), True, dtype=bool)

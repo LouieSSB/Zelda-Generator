@@ -38,7 +38,6 @@ class Enemy():
         self.path = []
         
         self.room = room
-        #self.graph = astar.makeGraph(self.room)
         self.timer = 0
 
         self.sprite.left = (x)*TILE
@@ -71,8 +70,6 @@ class Enemy():
         newX = self.x + x
         newY = self.y + y
         if newX < 15 and newX > 0 and newY < 10 and newY > 1:
-            #if self.graph[newX, newY] != None:
-            #    return True
             if self.room.map[newY][newX] == 0:
                 return True
 

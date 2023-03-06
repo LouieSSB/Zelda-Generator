@@ -7,6 +7,8 @@ import Rooms as rooms
 import random
 import Player
 import Map
+import Tilemap
+from PIL import Image
 
 SCREEN_WIDTH = 512
 SCREEN_HEIGHT = 480
@@ -46,8 +48,13 @@ class MyGame(arcade.Window):
         self.wallList = arcade.SpriteList()
         self.mapList = arcade.SpriteList()
 
-        
-        self.map = Map.Map(5,5)
+        maze_width = 6
+        maze_height = 6
+
+        extraDoors = [2,2,2,2]
+        rupeeDensity = [0.5, 0.0, 0.1, 0.1]
+        enemyDensity = [0.0, 0.1, 0.1, 0.1]
+        self.map = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity)
 
         self.current_room = self.map.rooms[0,0]
         
@@ -68,7 +75,12 @@ class MyGame(arcade.Window):
         self.playerList.append(self.triforceSprite)
 
         ### LINK ###
-        self.link = Player.Player(3, 3, linkSprite, self.current_room, self.map)
+        self.link = Player.Player(3, 3, linkSprite, self.current_room, self.map, 1.0)
+
+        self.tilemap = Tilemap.SpriteSheetWriter((maze_width*TILE*16), (maze_height*TILE*11))
+        #self.tilemap.addImage(Image.open("link_01.png"))
+        Tilemap.generateMap(self.tilemap, self.map)
+        self.tilemap.show()
 
 
         self.physics_engine = arcade.PhysicsEngineSimple(self.link.sprite, self.current_room.wallList)
@@ -122,6 +134,14 @@ class MyGame(arcade.Window):
                          width=150,
                          )
 
+        arcade.draw_text("Quadrant: " + str(self.link.current_room.quadrant),
+                         start_x - 200,
+                         start_y - 20,
+                         arcade.color.WHITE,
+                         DEFAULT_FONT_SIZE,
+                         width=150,
+                         )
+
 ### UPDATE ###
     def update(self, delta_time):
         """ All the logic to move, and the game logic goes here. """
@@ -134,7 +154,6 @@ class MyGame(arcade.Window):
         
         for enemy in enemyHitList:
             enemy.kill()
-            print(len(self.link.enemyTargets))
             self.link.kills += 1
             num = random.random()
             if self.link.combatAbility <= num:

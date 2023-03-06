@@ -25,7 +25,7 @@ FINISHING = 3
 SPEED = 1
 
 class Player():
-    def __init__(self, x, y, sprite, starting_room, map):
+    def __init__(self, x, y, sprite, starting_room, map, heuristic):
         self.x = x
         self.y = y
         self.sprite = sprite
@@ -55,6 +55,7 @@ class Player():
         self.rupeeAffinity = 0.1
         self.combatAffinity = 1.0
         self.combatAbility = 0.9
+        self.heuristic = heuristic
 
         self.sprite.position = ((x+0.5)*TILE, (y+0.5)*TILE)
         
@@ -66,7 +67,6 @@ class Player():
         self.gotoRupees()
         self.killEnemies()
         self.traverse()
-        print(len(self.enemyTargets))
 
         return
 
@@ -83,10 +83,19 @@ class Player():
             self.last_state = TRAVERSING
             self.graph = astar.makeGraph(self.current_room)
             end = None
+
+            bestDoor = 10000000
             for i in range(4):
                 if self.current_room.checkedDoors[i] == False:
                     point = self.doorLookup(self.convertDirection(i))
-                    end = self.graph[point]
+                    num = random.random()
+                    if num <= self.heuristic:
+                        heuristic = self.findDoorHeuristic(self.convertDirection(i))
+                    else:
+                        heuristic = 10000
+                    if heuristic < bestDoor:
+                        end = self.graph[point]
+                        bestDoor = heuristic
 
             ### BACKTRACKING ###
             if end == None: 
@@ -203,7 +212,6 @@ class Player():
             num = random.random()
             if num <= self.combatAffinity:
                 self.enemyTargets.append(foe)
-                print("ADD")
         return
     
     def selectEnemy(self):
@@ -245,3 +253,22 @@ class Player():
             return EAST
         elif i == 3:
             return WEST
+        
+    
+    def findDoorHeuristic(self, direction):
+        room = None
+        x = self.current_room.x
+        y = self.current_room.y
+
+        if direction == NORTH:
+            room = self.map.rooms[x, y+1]
+        if direction == SOUTH:
+            room = self.map.rooms[x, y-1]
+        if direction == EAST:
+            room = self.map.rooms[x+1, y]
+        if direction == WEST:
+            room = self.map.rooms[x-1, y]
+        
+
+
+        return sum(abs(val1-val2) for val1, val2 in zip(room.location, self.map.goal.location))
