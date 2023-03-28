@@ -1,3 +1,4 @@
+### IMPORTS ###
 import math
 import random
 import arcade
@@ -6,6 +7,7 @@ import AStar as astar
 import Rooms as rooms
 import random
 
+### CONSTANTS ###
 SCREEN_WIDTH = 512
 SCREEN_HEIGHT = 480
 TILE = 32
@@ -21,18 +23,22 @@ DOOR = 2
 RUPEE_DENSITY = 0.5
 ENEMY_DENSITY = 0.1
 
+### MAZE CLASS ###
 class Map():
+    ### INIT ###
     def __init__(self, width, height, extraDoors, rupeeDensity, enemyDensity):
         self.height = height
         self.width = width
         self.rooms = np.empty([width, height], rooms.Room)
+        self.goal = None
         
-        self.quadrants = [[],[],[],[]]
-        self.extraDoors = extraDoors #List that is 4 items long, one for each quadrant
+        ### Lists that are 4 items long, one for each quadrant ###
+        #self.quadrants = [[],[],[],[]]  
+        self.quadrants = [[],[]]
+        self.extraDoors = extraDoors 
         self.rupeeDensity = rupeeDensity
-        self.enemyDensity = enemyDensity #Also list of numbers for each quadrant
-
-        self.goal = None # Triforce room
+        self.enemyDensity = enemyDensity
+        
         ### Create map array ###
         for x in range(width):
             for y in range(height):
@@ -40,11 +46,14 @@ class Map():
                 
         ### Map of which rooms have been visited for maze generation ###
         self.visited = np.full([width,height], False, dtype=bool)
-        self.tilelist = arcade.SpriteList() # Sprite list for minimap
+
+        ### MINIMAP SPRITES ###
+        self.tilelist = arcade.SpriteList() 
 
         ### Depth-first maze generation ###
         self.generateMaze()
 
+        ### DIVIDE MAP ###
         self.makeQuadrants()
         
 
@@ -56,16 +65,21 @@ class Map():
                     self.goal = self.rooms[i,j]
                     highest = self.rooms[i,j].distance
         self.goal.final = True
+        
+        ### ADD IN EXTRA DOORS ###
         self.addDoors()
         
         ### Sets templates for each room, and builds their tiles ###
         for i in range (width):
             for j in range(height):
-                if self.rooms[i,j] == self.goal: #Triforce room gets its own layout
+                ### Triforce room gets its own layout ###
+                if self.rooms[i,j] == self.goal: 
                     self.goal.setTemplate(13)
-                    rooms.makeRoom(self.rooms[i,j], 0, 0) #Room has no enemies or money
+                    ### Room has no enemies or money ###
+                    rooms.makeRoom(self.rooms[i,j], 0, 0) 
                 else:
-                    temp = random.randint(0, 12) #All other rooms are chosen randomly
+                    ### All other rooms are chosen randomly ###
+                    temp = random.randint(0, 12) 
                     self.rooms[i,j].setTemplate(temp)
                     rooms.makeRoom(self.rooms[i,j], self.rupeeDensity[self.rooms[i,j].quadrant], self.enemyDensity[self.rooms[i,j].quadrant])
                 
@@ -77,7 +91,8 @@ class Map():
 
     ### MAZE GENERATOR ###
     def generateMaze(self):
-        stack = [] #Stack for depth-first generation
+        ### Stack for depth-first generation ###
+        stack = []
         ### Starting co-ordinates ###
         x = 0
         y = 0
@@ -127,7 +142,8 @@ class Map():
         for i in range (self.width):
             for (j) in range(self.height):
                 if self.rooms[i,j] != None:
-                    maptile = arcade.Sprite("room_01.png") # Blue rectangle graphic
+                    ### Blue rectangle graphic ###
+                    maptile = arcade.Sprite("graphics/room_01.png") 
                     maptile.left = i*(TILE/2) + 100
                     maptile.bottom = 13*TILE + (8*j) - 8
                     self.tilelist.append(maptile)
@@ -156,9 +172,12 @@ class Map():
                 options.append(neighbour) 
         return options
     
+    ### ADD DOORS ###
     def addDoors(self):
-        for i in range(4):
+        ### FOR EACH QUADRANT
+        for i in range(2):
             for room in self.quadrants[i]:
+                ### Don't add doors to last room ###
                 if room.x + 1 < self.width and self.extraDoors[i] > 0:
                     if room.east == None and not room.final and not self.rooms[room.x+1, room.y].final:
                         rooms.pairRooms(room, self.rooms[room.x+1, room.y], EAST)
@@ -171,25 +190,37 @@ class Map():
 
 
 
-
+    ### MAKE QUADRANTS ###
     def makeQuadrants(self):
         for x in range (self.width):
             for y in range (self.height):
                 if (y+1) <= self.height/2:
+                    ### BOTTOM LEFT ###
                     if (x+1) <= self.width/2:
-                        self.quadrants[0].append(self.rooms[x,y]) ### Bottom left
+                        self.quadrants[0].append(self.rooms[x,y]) 
                         self.rooms[x,y].quadrant = 0
+                    ### BOTTOM RIGHT ###
                     else:
-                        self.quadrants[1].append(self.rooms[x,y]) ### Bottom right
+                        self.quadrants[1].append(self.rooms[x,y])
                         self.rooms[x,y].quadrant = 1
                 else:
+                    ### TOP LEFT ###
                     if (x+1) <= self.width/2:
-                        self.quadrants[2].append(self.rooms[x,y]) ### Top left
-                        self.rooms[x,y].quadrant = 2
+                        #self.quadrants[2].append(self.rooms[x,y])
+                        self.quadrants[0].append(self.rooms[x,y])
+                        #self.rooms[x,y].quadrant = 2
+                        self.rooms[x,y].quadrant = 0
+                    ### TOP RIGHT ###
                     else:
-                        self.quadrants[3].append(self.rooms[x,y]) ### Top right
-                        self.rooms[x,y].quadrant = 3
-        for i in range(4):
+                        #self.quadrants[3].append(self.rooms[x,y])
+                        self.quadrants[1].append(self.rooms[x,y])
+                        #self.rooms[x,y].quadrant = 3
+                        self.rooms[x,y].quadrant = 1
+        
+        ### Shuffle rooms so extra doors are random ###
+        #for i in range(4):
+        #    random.shuffle(self.quadrants[i])
+        for i in range(2):
             random.shuffle(self.quadrants[i])
 
 

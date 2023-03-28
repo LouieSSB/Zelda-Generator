@@ -1,11 +1,15 @@
+### IMPORTS ###
 import math
 import random
 import arcade
 import numpy as np
+
+### CONSTANTS
 FLOOR = 0
 WALL = 1
 DOOR = 2
 
+### TILE OBJECT ###
 class Node:
      def __init__(self, x, y, type):
         self.x = x
@@ -17,15 +21,17 @@ class Node:
         self.type = type
         self.neighbours = []
 
-
+### ALGORITHM ###
 def aStar(start, end):
+    ### LISTS ###
     path = []
     openSet = []
     closedSet = []
     currentNode = start
 
-
     openSet.append(currentNode)
+
+    ### MAIN LOOP ###
     while end not in closedSet and len(openSet) > 0:
         cheapest = 100000
         for node in openSet:
@@ -38,8 +44,8 @@ def aStar(start, end):
                 
         for node in currentNode.neighbours:
             if node not in openSet and node not in closedSet:
-                node.gcost = currentNode.gcost + 1 ### TRY USING A WEIGHT TO AVOID ENEMIES
-                node.hcost = abs(end.x - node.x) + abs(end.y - node.y) ### DO LATER
+                node.gcost = currentNode.gcost + 1
+                node.hcost = abs(end.x - node.x) + abs(end.y - node.y)
                 node.fcost = node.gcost + node.hcost
                 node.parent = currentNode
                 openSet.append(node)
@@ -49,14 +55,15 @@ def aStar(start, end):
                     node.fcost + node.gcost + node.hcost
                     node.parent = currentNode
 
+    ## Backtrack from goal to find path ###
     nextNode = end
     while nextNode.parent != None:
         path.insert(0, nextNode)
         nextNode = nextNode.parent
 
-
     return path
 
+### MAKE GRAPH ###
 def makeGraph(room):
     graph = np.empty([16,11], Node)
     for x in range (16):
@@ -73,6 +80,7 @@ def makeGraph(room):
 
     return graph
 
+### CONNECT NODES ###
 def addNeighbours(node, graph):
     if node.x + 1 < 16:
         if graph[node.x + 1, node.y] != None:
