@@ -36,7 +36,7 @@ class SpriteSheetWriter:
 		self.spritesheet.show()
 
 ### CREATE ###
-def generateMap(tilemap, map, seed):
+def generateMap(tilemap, map, fileName):
 	width = len(map.rooms)
 	height = len(map.rooms[0])
 	for x in range (width):
@@ -53,8 +53,8 @@ def generateMap(tilemap, map, seed):
 			for rupee in room.rupees:
 				tilemap.addImage(Image.open("graphics/rupee_01.png"), rupee.left + shiftX(x), shiftY(tilemap, y) - rupee.bottom - 32)
 			for triforce in room.triforce:
-				tilemap.addImage(Image.open("graphics/triforce_01.png"), triforce.left + shiftX(x), shiftY(tilemap, y) - triforce.bottom - 32)
-	tilemap.spritesheet.save("maps/"+str(seed)+".png")
+				tilemap.addImage(Image.open("graphics/triforce_01.png"), triforce.left - 6 + shiftX(x), shiftY(tilemap, y) - triforce.bottom - 32)
+	tilemap.spritesheet.save("maps/"+fileName+".png")
 		
 ###	REALIGN ###
 def shiftY(tilemap, y):

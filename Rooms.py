@@ -40,6 +40,9 @@ class Room:
         self.y = location[1]
         self.neighbours = []
 
+        ### FILLED TILES ###
+        self.filled = np.full([MAP_WIDTH, MAP_HEIGHT], False)
+
         ### CONNECTIONS ###
         self.north = None
         self.south = None
@@ -138,11 +141,12 @@ def makeRoom(room, rupee_density, enemy_density):
                     rupee.left = x*TILE + TILE/4
                     rupee.bottom = SCREEN_HEIGHT -(5*TILE) - y*TILE
                     room.rupees.append(rupee)
+                    room.filled[x,y] = True
     
     ### ADD ENEMIES ###
     for x in range (MAP_WIDTH):
         for y in range(MAP_HEIGHT):
-            if room.map[y][x] == 0:
+            if room.map[y][x] == 0 and room.filled[x,y] == False:
                 num = random.random()
                 if enemy_density >= num:
                     foe = enemy.Enemy(x,y, STALFOS, room)

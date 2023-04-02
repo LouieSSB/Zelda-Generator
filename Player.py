@@ -93,7 +93,6 @@ class Player():
     def move (self):
         ### Increment frame timer ###
         self.timer += 1
-        self.totaltime += 1
 
         ### Take next step in path, remove from list ###
         if len(self.path) > 0 and self.timer >= SPEED:

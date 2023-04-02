@@ -4,7 +4,7 @@ import random
 import arcade
 import numpy as np
 
-### CONSTANTS
+### CONSTANTS ###
 FLOOR = 0
 WALL = 1
 DOOR = 2

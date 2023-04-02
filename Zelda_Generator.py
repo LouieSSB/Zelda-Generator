@@ -12,6 +12,12 @@ import Tilemap
 from PIL import Image
 import sys
 import csv
+from scipy.stats.qmc import LatinHypercube
+import Learning
+from hyperopt import fmin, tpe, hp, STATUS_OK, STATUS_FAIL
+import socket
+import copy
+
 
 ### CONSTANTS ###
 SCREEN_WIDTH = 512
@@ -28,6 +34,8 @@ FLOOR = 0
 WALL = 1
 DOOR = 2
 
+NETWORK = False
+
 ### GAME WINDOW ###
 class MyGame(arcade.Window):
     ### INIT ###
@@ -38,6 +46,8 @@ class MyGame(arcade.Window):
 
         # Set up the player
         self.rooms = None
+
+        self.bestScore = -100000000000
         
         self.link = None
         self.playerList = None
@@ -51,8 +61,7 @@ class MyGame(arcade.Window):
         self.rooms = None       
         self.link = None
         self.playerList = None
-        self.physics_engine = None 
-        #self.start = False
+        self.physics_engine = None
         
         ### ATTRIBUTES ###
         self.maze_width = maze_width
@@ -64,9 +73,11 @@ class MyGame(arcade.Window):
         self.extraDoors = extraDoors
         self.rupeeDensity = rupeeDensity
         self.enemyDensity = enemyDensity
+        self.playerParams = str(rupee_aff) + "_" + str(combat_aff) + "_" + str(combat_skill) + "_" + str(heuristic)
         self.iteration = iteration
         self.seed = seed
         random.seed(seed)
+        self.fileName = self.playerParams + '_' + str(self.seed)
 
         ### SPRITE LISTS ###
         self.playerList = arcade.SpriteList()
@@ -75,6 +86,7 @@ class MyGame(arcade.Window):
 
         ### GENERATE MAZE ###
         self.map = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity)
+        self.unchangedMap = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity)
         self.current_room = self.map.rooms[0,0]
         self.current_room.visited = True
         self.last_room = self.current_room
@@ -97,10 +109,12 @@ class MyGame(arcade.Window):
         self.physics_engine = arcade.PhysicsEngineSimple(self.link.sprite, self.current_room.wallList)
 
         ### MAKE TILEMAP ###
-        if iteration == 4:
-            self.tilemap = Tilemap.SpriteSheetWriter((maze_width*TILE*16), (maze_height*TILE*11))
-            Tilemap.generateMap(self.tilemap, self.map, self.seed)
-            #self.tilemap.show()
+        self.tilemap = Tilemap.SpriteSheetWriter((maze_width*TILE*16), (maze_height*TILE*11))
+        """
+        if iteration == 2:     
+            Tilemap.generateMap(self.tilemap, self.map, self.fileName)
+            self.tilemap.show()
+        """
 
 
 
@@ -189,6 +203,8 @@ class MyGame(arcade.Window):
         rupeeHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.rupees)
         triforceHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.triforce)
         enemyHitList = arcade.check_for_collision_with_list(self.link.sprite, self.link.current_room.enemySprites)
+
+        self.link.totaltime += 1
         
         ### RUPEES ###
         for rupee in rupeeHitList:
@@ -207,7 +223,7 @@ class MyGame(arcade.Window):
         for triforce in triforceHitList:
             triforce.kill()
             print("GAME DONE!")
-            self.restart()
+            self.restart()      
         
         ### EAST ###
         if self.link.sprite.center_x > (SCREEN_WIDTH - TILE):
@@ -322,17 +338,16 @@ class MyGame(arcade.Window):
 
     ### CREATE CSV ###
     def createCSV(self):
-        f = open('outputs/'+str(self.seed)+'.csv', 'w', newline='')
-        header = ['rupee_0', 'rupee_1', 'enemy_0', 'enemy_1', 'doors_0', 'doors_1', 'fitness']
+        f = open('outputs/'+self.fileName+'.csv', 'w', newline='')
+        header = ['iteration', 'rupee_0', 'rupee_1', 'enemy_0', 'enemy_1', 'doors_0', 'doors_1', 'fitness']
         writer = csv.writer(f)
         writer.writerow(header)
         f.close()
 
     ### WRITE TO CSV ###
-    def writeToCSV(self, rupeeDensity, enemyDensity, extraDoors, fitness):
-        f = open('outputs/'+str(self.seed)+'.csv', 'a', newline='')
-        num = random.randint(0,100)
-        row = [rupeeDensity[0], rupeeDensity[1], enemyDensity[0],enemyDensity[1], extraDoors[0], extraDoors[1],fitness]
+    def writeToCSV(self, rupeeDensity, enemyDensity, extraDoors, fitness, iteration):
+        f = open('outputs/'+self.fileName+'.csv', 'a', newline='')
+        row = [iteration, rupeeDensity[0], rupeeDensity[1], enemyDensity[0],enemyDensity[1], extraDoors[0], extraDoors[1],fitness]
     
         writer = csv.writer(f)
         writer.writerow(row)
@@ -340,21 +355,78 @@ class MyGame(arcade.Window):
 
     ### RESET GAME ###
     def restart(self):
+
         fitness = self.link.money + 2*self.link.kills - 8*self.link.damage - 0.2*self.link.totaltime + 10*self.link.roomsVisited
         print(fitness)
-        self.writeToCSV(self.rupeeDensity, self.enemyDensity, self.extraDoors, fitness)
-        extraDoors = [2,2]
-        rupeeDensity = [random.random(), random.random()]
-        enemyDensity = [random.random(), random.random()]
+        self.writeToCSV(self.rupeeDensity, self.enemyDensity, self.extraDoors, fitness, self.iteration)
+        if fitness > self.bestScore:
+            self.bestScore = fitness
+            Tilemap.generateMap(self.tilemap, self.unchangedMap, self.fileName + '_best_' + str(self.iteration))
+
+
+        if NETWORK:
+            sendFitness(fitness)
+            data = receiveParams()
+            rupeeDensity = data[0]
+            enemyDensity = data[1]
+            extraDoors = data[2]
+        
+        else:
+            extraDoors = [2,2]
+            rupeeDensity = [random.random(), random.random()]
+            enemyDensity = [random.random(), random.random()]
+        
         self.setup(extraDoors, rupeeDensity, enemyDensity, self.seed, self.rupee_aff, self.combat_aff, self.combat_skill, self.heuristic, self.maze_width, self.maze_height, self.iteration+1)
+    
+### Send fitness after finishing ###
+def sendFitness(fitness):
+    host = socket.gethostname()
+    port = 8081
+  
+    s = socket.socket()
+    s.connect((host, port))
+    ### Negate fitness since we are "minimising" loss ###
+    message = str(-fitness) 
+    s.send(message.encode('utf-8'))
+    
+    s.close()
+    print("FITNESS SENT")
+
+
+### Receive parameters before starting ###
+def receiveParams():
+    host = socket.gethostname() 
+    port = 8080 
+  
+    s = socket.socket()
+    s.bind((host, port))
+  
+    s.listen(1)
+    c, addr = s.accept()
+    data = c.recv(1024).decode('utf-8')
+    data = eval(data)
+    print("PARAMS RECEIVED")
+    c.close()
+
+    return data
 
 ### MAIN ###
 def main():
     game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT)
+    
     ### Parameters are: enemy density, rupee density, extra doors, rng seed ###
-    extraDoors = [2,2]
-    rupeeDensity = [0.5, 0.0]
-    enemyDensity = [0.0, 0.1]
+    ### RECEIVE PARAMS ###
+    if NETWORK:
+        data = receiveParams()
+        rupeeDensity = data[0]
+        enemyDensity = data[1]
+        extraDoors = data[2]
+    ### PRESET PARAMS ###    
+    else:
+        extraDoors = [2,2]
+        rupeeDensity = [0.5, 0.0]
+        enemyDensity = [0.0, 0.1]
+    
     ### Player parameters ###
     rupee_aff = 0.4
     combat_aff = 0.6
@@ -369,8 +441,6 @@ def main():
     seed = random.randrange(sys.maxsize)
     #seed = 4453415329130735445
     print("seed: " , seed)
-
-    
     
     ### Create game ###
     game.setup(extraDoors, rupeeDensity, enemyDensity, seed, rupee_aff, combat_aff, combat_skill, heuristic, maze_width, maze_height, 0)
@@ -380,6 +450,9 @@ def main():
 
     ### Run game ###
     arcade.run()
+    return
+
+
 
 
 if __name__ == "__main__":
