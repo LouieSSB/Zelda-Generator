@@ -34,7 +34,7 @@ FLOOR = 0
 WALL = 1
 DOOR = 2
 
-NETWORK = False
+NETWORK = True
 
 ### GAME WINDOW ###
 class MyGame(arcade.Window):
@@ -56,7 +56,7 @@ class MyGame(arcade.Window):
         arcade.set_background_color(arcade.color.BLACK)
     
     ### SETUP GAME ###
-    def setup(self, extraDoors, rupeeDensity, enemyDensity, seed, rupee_aff, combat_aff, combat_skill, heuristic, maze_width, maze_height, iteration):
+    def setup(self, extraDoors, rupeeDensity, enemyDensity, difficulty, seed, rupee_aff, combat_aff, combat_skill, heuristic, maze_width, maze_height, iteration):
         ### INITIALISE ###
         self.rooms = None       
         self.link = None
@@ -73,6 +73,7 @@ class MyGame(arcade.Window):
         self.extraDoors = extraDoors
         self.rupeeDensity = rupeeDensity
         self.enemyDensity = enemyDensity
+        self.difficulty = difficulty
         self.playerParams = str(rupee_aff) + "_" + str(combat_aff) + "_" + str(combat_skill) + "_" + str(heuristic)
         self.iteration = iteration
         self.seed = seed
@@ -85,8 +86,9 @@ class MyGame(arcade.Window):
         self.mapList = arcade.SpriteList()
 
         ### GENERATE MAZE ###
-        self.map = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity)
-        self.unchangedMap = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity)
+        self.map = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity, difficulty)
+        random.seed(seed)
+        self.unchangedMap = Map.Map(maze_width, maze_height, extraDoors, rupeeDensity, enemyDensity, difficulty)
         self.current_room = self.map.rooms[0,0]
         self.current_room.visited = True
         self.last_room = self.current_room
@@ -339,15 +341,15 @@ class MyGame(arcade.Window):
     ### CREATE CSV ###
     def createCSV(self):
         f = open('outputs/'+self.fileName+'.csv', 'w', newline='')
-        header = ['iteration', 'rupee_0', 'rupee_1', 'enemy_0', 'enemy_1', 'doors_0', 'doors_1', 'fitness']
+        header = ['iteration', 'rupee_0', 'rupee_1', 'enemy_0', 'enemy_1', 'doors_0', 'doors_1', 'difficulty', 'fitness']
         writer = csv.writer(f)
         writer.writerow(header)
         f.close()
 
     ### WRITE TO CSV ###
-    def writeToCSV(self, rupeeDensity, enemyDensity, extraDoors, fitness, iteration):
+    def writeToCSV(self, rupeeDensity, enemyDensity, extraDoors, difficulty, fitness, iteration):
         f = open('outputs/'+self.fileName+'.csv', 'a', newline='')
-        row = [iteration, rupeeDensity[0], rupeeDensity[1], enemyDensity[0],enemyDensity[1], extraDoors[0], extraDoors[1],fitness]
+        row = [iteration, rupeeDensity[0], rupeeDensity[1], enemyDensity[0],enemyDensity[1], extraDoors[0], extraDoors[1], difficulty,fitness]
     
         writer = csv.writer(f)
         writer.writerow(row)
@@ -358,11 +360,10 @@ class MyGame(arcade.Window):
 
         fitness = self.link.money + 2*self.link.kills - 8*self.link.damage - 0.2*self.link.totaltime + 10*self.link.roomsVisited
         print(fitness)
-        self.writeToCSV(self.rupeeDensity, self.enemyDensity, self.extraDoors, fitness, self.iteration)
+        self.writeToCSV(self.rupeeDensity, self.enemyDensity, self.extraDoors, self.difficulty, fitness, self.iteration)
         if fitness > self.bestScore:
             self.bestScore = fitness
             Tilemap.generateMap(self.tilemap, self.unchangedMap, self.fileName + '_best_' + str(self.iteration))
-
 
         if NETWORK:
             sendFitness(fitness)
@@ -370,13 +371,15 @@ class MyGame(arcade.Window):
             rupeeDensity = data[0]
             enemyDensity = data[1]
             extraDoors = data[2]
+            difficulty = data[3]
         
         else:
             extraDoors = [2,2]
             rupeeDensity = [random.random(), random.random()]
             enemyDensity = [random.random(), random.random()]
+            difficulty = random.random()
         
-        self.setup(extraDoors, rupeeDensity, enemyDensity, self.seed, self.rupee_aff, self.combat_aff, self.combat_skill, self.heuristic, self.maze_width, self.maze_height, self.iteration+1)
+        self.setup(extraDoors, rupeeDensity, enemyDensity, difficulty, self.seed, self.rupee_aff, self.combat_aff, self.combat_skill, self.heuristic, self.maze_width, self.maze_height, self.iteration+1)
     
 ### Send fitness after finishing ###
 def sendFitness(fitness):
@@ -421,11 +424,13 @@ def main():
         rupeeDensity = data[0]
         enemyDensity = data[1]
         extraDoors = data[2]
+        difficulty = data[3]
     ### PRESET PARAMS ###    
     else:
         extraDoors = [2,2]
         rupeeDensity = [0.5, 0.0]
         enemyDensity = [0.0, 0.1]
+        difficulty = 0.5
     
     ### Player parameters ###
     rupee_aff = 0.4
@@ -434,8 +439,8 @@ def main():
     heuristic = 0.6
 
     ### Maze parameters ###
-    maze_width = 2
-    maze_height = 2
+    maze_width = 4
+    maze_height = 4
 
     ### Generate seed ###
     seed = random.randrange(sys.maxsize)
@@ -443,7 +448,7 @@ def main():
     print("seed: " , seed)
     
     ### Create game ###
-    game.setup(extraDoors, rupeeDensity, enemyDensity, seed, rupee_aff, combat_aff, combat_skill, heuristic, maze_width, maze_height, 0)
+    game.setup(extraDoors, rupeeDensity, enemyDensity, difficulty, seed, rupee_aff, combat_aff, combat_skill, heuristic, maze_width, maze_height, 0)
 
     ### Initialise file ###
     game.createCSV()

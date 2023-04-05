@@ -6,6 +6,7 @@ import numpy as np
 import AStar as astar
 import Rooms as rooms
 import random
+import copy
 
 ### CONSTANTS ###
 SCREEN_WIDTH = 512
@@ -26,7 +27,7 @@ ENEMY_DENSITY = 0.1
 ### MAZE CLASS ###
 class Map():
     ### INIT ###
-    def __init__(self, width, height, extraDoors, rupeeDensity, enemyDensity):
+    def __init__(self, width, height, extraDoors, rupeeDensity, enemyDensity, difficulty):
         self.height = height
         self.width = width
         self.rooms = np.empty([width, height], rooms.Room)
@@ -35,9 +36,10 @@ class Map():
         ### Lists that are 4 items long, one for each quadrant ###
         #self.quadrants = [[],[],[],[]]  
         self.quadrants = [[],[]]
-        self.extraDoors = extraDoors 
+        self.extraDoors = copy.deepcopy(extraDoors)
         self.rupeeDensity = rupeeDensity
         self.enemyDensity = enemyDensity
+        self.difficulty = difficulty
         
         ### Create map array ###
         for x in range(width):
@@ -79,7 +81,8 @@ class Map():
                     rooms.makeRoom(self.rooms[i,j], 0, 0) 
                 else:
                     ### All other rooms are chosen randomly ###
-                    temp = random.randint(0, 12) 
+                    #temp = random.randint(0, 12) 
+                    temp = self.weightedTemplate(self.difficulty)
                     self.rooms[i,j].setTemplate(temp)
                     rooms.makeRoom(self.rooms[i,j], self.rupeeDensity[self.rooms[i,j].quadrant], self.enemyDensity[self.rooms[i,j].quadrant])
                 
@@ -222,6 +225,26 @@ class Map():
         #    random.shuffle(self.quadrants[i])
         for i in range(2):
             random.shuffle(self.quadrants[i])
+
+    def weightedTemplate(self, difficulty):
+        weights =      [1,1,1,1,1,1,1,1,1,1,1,1,1]
+        weight = int(difficulty *13)
+        weights[weight] = 2
+        for n in range(weight - 1, weight - 4,-1):
+            if n >= 0:
+                weights[n] = 2
+        for n in range(weight + 1, weight + 4, 1):
+            if n < 13:
+                weights[n] = 2
+
+        population = [0,1,2,3,4,5,6,7,8,9,10,11,12]
+        temp = random.choices(population, weights=weights, k=1)
+        return temp[0]
+
+### parameter is between 0 and 1
+### miltiply this by 13 and round to get middle index
+### give the indexes 3 to the left and 3 to the right additional weight
+
 
 
         
